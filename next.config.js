@@ -8,7 +8,8 @@ const nextConfig = {
       'puppeteer-extra', 
       'puppeteer-extra-plugin-stealth',
       'puppeteer-extra-plugin-recaptcha',
-      'puppeteer-extra-plugin-adblocker'
+      'puppeteer-extra-plugin-adblocker',
+      '@sparticuz/chromium'
     ],
   },
 };

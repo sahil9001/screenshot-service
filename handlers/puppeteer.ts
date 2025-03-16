@@ -15,16 +15,17 @@ export class PuppeteerHandler {
         let browser;
         try {
             const isLocal = process.env.NODE_ENV === 'development';
+            const executablePath = isLocal ? '/opt/homebrew/bin/chromium' : await chromium.executablePath();
             const options = isLocal ? {
                 args: chromium.args,
                 defaultViewport: chromium.defaultViewport,
-                executablePath: '/opt/homebrew/bin/chromium',
+                executablePath,
                 headless: chromium.headless,
                 ignoreHTTPSErrors: true
             } : {
                 args: chromium.args,
                 defaultViewport: chromium.defaultViewport,
-                executablePath: await chromium.executablePath(),
+                executablePath,
                 headless: chromium.headless,
             };
             browser = await puppeteer.launch(options);
