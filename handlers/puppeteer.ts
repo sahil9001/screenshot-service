@@ -24,7 +24,7 @@ export class PuppeteerHandler {
             } : {
                 args: chromium.args,
                 defaultViewport: chromium.defaultViewport,
-                executablePath: await chromium.executablePath('opt/nodejs/node_modules/@sparticuz/chromium/bin'),
+                executablePath: await chromium.executablePath(),
                 headless: chromium.headless,
             };
             browser = await puppeteer.launch(options);
