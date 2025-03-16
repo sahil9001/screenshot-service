@@ -8,22 +8,26 @@ export class PuppeteerHandler {
     constructor() {
         puppeteer.use(StealthPlugin());
         puppeteer.use(AdblockerPlugin({ blockTrackers: true }));
+        chromium.setGraphicsMode = false;
     }
-
+    
     async captureScreenshot({ url, device, width, height, followRedirects }: any) {
         let browser;
         try {
-            browser = await puppeteer.launch({
+            const isLocal = process.env.NODE_ENV === 'development';
+            const options = isLocal ? {
+                args: chromium.args,
+                defaultViewport: chromium.defaultViewport,
+                executablePath: '/opt/homebrew/bin/chromium',
                 headless: chromium.headless,
-                ignoreHTTPSErrors: true,
-                args: [
-                    ...chromium.args,
-                    '--no-sandbox',
-                    '--disable-setuid-sandbox',
-                    '--disable-blink-features=AutomationControlled',
-                ],
-                executablePath: await chromium.executablePath() || '/usr/bin/google-chrome-stable',
-            });
+                ignoreHTTPSErrors: true
+            } : {
+                args: chromium.args,
+                defaultViewport: chromium.defaultViewport,
+                executablePath: await chromium.executablePath('opt/nodejs/node_modules/@sparticuz/chromium/bin'),
+                headless: chromium.headless,
+            };
+            browser = await puppeteer.launch(options);
 
             const page = await browser.newPage();
             await page.setUserAgent(
