@@ -1,5 +1,12 @@
-import puppeteer from 'puppeteer-core';
+import puppeteer from 'puppeteer-extra';
 import chromium from '@sparticuz/chromium';
+import StealthPlugin from 'puppeteer-extra-plugin-stealth';
+import AdblockerPlugin from 'puppeteer-extra-plugin-adblocker';
+
+// Use Stealth Plugin
+const stealth = StealthPlugin();
+puppeteer.use(stealth);
+puppeteer.use(AdblockerPlugin({ blockTrackers: true }));
 
 // Puppeteer Handler Class
 export class PuppeteerHandler {
@@ -14,18 +21,16 @@ export class PuppeteerHandler {
         try {
             const isLocal = process.env.NODE_ENV === 'development';
             const executablePath = isLocal ? '/opt/homebrew/bin/chromium' : await chromium.executablePath();
-            const options = isLocal ? {
+            
+            const options = {
                 args: chromium.args,
                 defaultViewport: chromium.defaultViewport,
                 executablePath,
                 headless: chromium.headless,
                 ignoreHTTPSErrors: true
-            } : {
-                args: chromium.args,
-                defaultViewport: chromium.defaultViewport,
-                executablePath,
-                headless: chromium.headless,
             };
+
+            // Launch Puppeteer with Stealth and Adblocker enabled
             browser = await puppeteer.launch(options);
 
             const page = await browser.newPage();
@@ -44,11 +49,6 @@ export class PuppeteerHandler {
                 default:
                     await page.setViewport({ width: width || 1920, height: height || 1080 });
             }
-
-            // Prevent detection as a bot
-            await page.evaluateOnNewDocument(() => {
-                Object.defineProperty(navigator, 'webdriver', { get: () => false });
-            });
 
             // Handle redirects
             if (!followRedirects) {
