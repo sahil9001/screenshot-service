@@ -2,6 +2,7 @@ import puppeteer from 'puppeteer-extra';
 import StealthPlugin from 'puppeteer-extra-plugin-stealth';
 import AdblockerPlugin from 'puppeteer-extra-plugin-adblocker';
 import RecaptchaPlugin from 'puppeteer-extra-plugin-recaptcha';
+import chromium from "@sparticuz/chromium";
 
 // Puppeteer Handler Class
 export class PuppeteerHandler {
@@ -20,7 +21,8 @@ export class PuppeteerHandler {
                 '--no-sandbox',
                 '--disable-setuid-sandbox',
                 '--disable-blink-features=AutomationControlled'
-            ]
+            ],
+            executablePath: (await chromium.executablePath()) || "/usr/bin/google-chrome-stable"
         });
 
         const page = await browser.newPage();

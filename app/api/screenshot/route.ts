@@ -67,11 +67,11 @@ const updateUserTotalScreenshots = async (userId: string) => {
     .from('profiles')
     .select('total_screenshots')
     .eq('user_id', userId)
-    .single();
-  if (profile) {
+    .limit(1);
+  if (profile?.[0]) {
     await supabase
       .from('profiles')
-      .update({ total_screenshots: profile.total_screenshots + 1 })
+      .update({ total_screenshots: profile[0].total_screenshots + 1 })
       .eq('user_id', userId);
   }
 };
@@ -82,13 +82,13 @@ const checkSubscription = async (userId: string) => {
     .select('*')
     .eq('user_id', userId)
     .limit(1);
-
-  if (!subscription) {
+  if (!subscription || subscription.length === 0) {
     const { data: profile } = await supabase
       .from('profiles')
-      .select('total_screenshots')
+      .select('*')
       .eq('user_id', userId)
       .limit(1);
+    if(!profile || profile.length === 0) return false;
     return profile?.[0]?.total_screenshots < SCREENSHOT_LIMIT;
   }
 
