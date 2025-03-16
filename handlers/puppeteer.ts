@@ -1,11 +1,5 @@
-import puppeteer from 'puppeteer-extra';
+import puppeteer from 'puppeteer-core';
 import chromium from '@sparticuz/chromium';
-import StealthPlugin from 'puppeteer-extra-plugin-stealth';
-import AdblockerPlugin from 'puppeteer-extra-plugin-adblocker';
-
-// Initialize plugins
-puppeteer.use(StealthPlugin());
-puppeteer.use(AdblockerPlugin({ blockTrackers: true }));
 
 // Puppeteer Handler Class
 export class PuppeteerHandler {
