@@ -40,7 +40,7 @@ export default function DashboardLayout({
   }
 
   return (
-    <div className="min-h-[calc(100vh-4rem)]">
+    <div className="min-h-[calc(100vh-4rem)] pt-16">
       <div className="container mx-auto px-4">
         <Card className="my-8 p-4 overflow-x-auto">
           <nav className="flex space-x-4">
@@ -56,20 +56,12 @@ export default function DashboardLayout({
                   onClick={() => router.push(tab.href)}
                   className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors relative ${
                     isActive 
-                      ? "text-primary" 
-                      : "text-muted-foreground hover:text-foreground"
+                      ? "bg-primary text-primary-foreground" 
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                   }`}
                 >
                   <Icon className="h-5 w-5" />
                   <span>{tab.name}</span>
-                  {isActive && (
-                    <motion.div
-                      layoutId="activeTab"
-                      className="absolute inset-0 bg-primary/10 rounded-lg"
-                      style={{ zIndex: -1 }}
-                      transition={{ type: "spring", duration: 0.5 }}
-                    />
-                  )}
                 </motion.button>
               );
             })}

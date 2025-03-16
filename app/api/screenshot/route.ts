@@ -1,164 +1,120 @@
 import { NextResponse } from 'next/server';
-import puppeteer from 'puppeteer-extra';
-import StealthPlugin from 'puppeteer-extra-plugin-stealth';
-import AdblockerPlugin from 'puppeteer-extra-plugin-adblocker';
-import RecaptchaPlugin from 'puppeteer-extra-plugin-recaptcha';
 import { createClient } from '@supabase/supabase-js';
+import { PuppeteerHandler } from '@/handlers/puppeteer';
 
-// Mark route as dynamic
 export const dynamic = 'force-dynamic';
 
-// Initialize Supabase client
+const SCREENSHOT_LIMIT = 10;
+
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-puppeteer.use(StealthPlugin());
-puppeteer.use(AdblockerPlugin({ blockTrackers: true }));
-puppeteer.use(
-  RecaptchaPlugin({ provider: { id: '2captcha', token: process.env.RECAPTCHA_API_KEY } })
-);
+const puppeteerHandler = new PuppeteerHandler();
 
-export async function POST(req: Request) {
-  try {
-    // Extract Authorization header
-    const authHeader = req.headers.get('authorization') || req.headers.get('Authorization');
-    if (!authHeader) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+const authenticateUser = async (authHeader: string | null) => {
+  if (!authHeader) {
+    throw new Error('Unauthorized');
+  }
+  const token = authHeader.replace('Bearer ', '');
+  const { data: { user }, error } = await supabase.auth.getUser(token);
+  if (error || !user) {
+    throw new Error('Unauthorized');
+  }
+  return user;
+};
 
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+const validateAndFormatUrl = (url: string) => {
+  if (!url) {
+    throw new Error('Invalid URL');
+  }
+  if (!url.startsWith('http://') && !url.startsWith('https://')) {
+    return `https://${url}`;
+  }
+  return url;
+};
 
-    const { url, device, width, height, followRedirects } = await req.json();
-    if (!url || !url.startsWith('http')) {
-      return NextResponse.json({ error: 'Invalid URL' }, { status: 400 });
-    }
+const captureAndUploadScreenshot = async (params: any) => {
+  const screenshot = await puppeteerHandler.captureScreenshot(params);
+  const fileName = `screenshots/${Date.now()}-${params.url.replace(/[^a-z0-9]/gi, '_')}.png`;
+  const { error } = await supabase.storage
+    .from('screenshots')
+    .upload(fileName, screenshot, { contentType: 'image/png' });
+  if (error) throw new Error('Failed to upload screenshot');
+  return fileName;
+};
 
-    // Launch browser with stealth mode
-    const browser = await puppeteer.launch({
-      headless: true,
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-blink-features=AutomationControlled'
-      ]
-    });
-    const page = await browser.newPage();
+const saveScreenshotMetadata = async (user: any, params: any, fileName: string) => {
+  const { data, error } = await supabase
+    .from('screenshots')
+    .insert([{
+      user_id: user.id,
+      url: params.url,
+      device: params.device,
+      width: params.width || 1920,
+      height: params.height || 1080,
+      storage_path: fileName,
+      created_at: new Date().toISOString(),
+    }])
+    .select();
+  if (error) throw new Error('Failed to save screenshot metadata');
+  return data[0];
+};
 
-    // Spoof user agent
-    await page.setUserAgent(
-      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36'
-    );
+const updateUserTotalScreenshots = async (userId: string) => {
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('total_screenshots')
+    .eq('user_id', userId)
+    .single();
+  if (profile) {
+    await supabase
+      .from('profiles')
+      .update({ total_screenshots: profile.total_screenshots + 1 })
+      .eq('user_id', userId);
+  }
+};
 
-    // Set viewport based on device type
-    switch (device) {
-      case 'mobile':
-        await page.setViewport({ width: 375, height: 667 });
-        break;
-      case 'tablet':
-        await page.setViewport({ width: 768, height: 1024 });
-        break;
-      default:
-        await page.setViewport({ width: width || 1920, height: height || 1080 });
-    }
+const checkSubscription = async (userId: string) => {
+  const { data: subscription } = await supabase
+    .from('subscriptions')
+    .select('*')
+    .eq('user_id', userId)
+    .limit(1);
 
-    // Prevent detection by removing WebDriver property
-    await page.evaluateOnNewDocument(() => {
-      Object.defineProperty(navigator, 'webdriver', { get: () => false });
-    });
-
-    // Solve reCAPTCHA if encountered
-    await page.solveRecaptchas();
-
-    // Configure redirect behavior
-    if (!followRedirects) {
-      await page.setRequestInterception(true);
-      page.on('request', (request) => {
-        if (request.isNavigationRequest() && request.redirectChain().length) {
-          request.abort();
-        } else {
-          request.continue();
-        }
-      });
-    }
-
-    // Navigate to URL
-    await page.goto(url, {
-      waitUntil: 'networkidle2',
-      timeout: 30000,
-    });
-
-    await page.waitForSelector('body', { timeout: 10000 });
-    // Take screenshot
-    const screenshot = await page.screenshot({
-      type: 'png',
-      fullPage: true,
-    });
-
-    await browser.close();
-
-    // Upload to Supabase Storage
-    const timestamp = new Date().getTime();
-    const fileName = `screenshots/${timestamp}-${url.replace(/[^a-z0-9]/gi, '_')}.png`;
-
-    const { data, error } = await supabase.storage
-      .from('screenshots')
-      .upload(fileName, screenshot, { contentType: 'image/png' });
-
-    if (error) {
-      console.log(error);
-      throw new Error('Failed to upload screenshot');
-    }
-
-    // Save screenshot metadata to database
-    const { data: screenshotData, error: dbError } = await supabase
-      .from('screenshots')
-      .insert([
-        {
-          user_id: user.id,
-          url,
-          device,
-          width: width || 1920,
-          height: height || 1080,
-          storage_path: fileName,
-          created_at: new Date().toISOString(),
-        },
-      ])
-      .select();
-
-    if (dbError) {
-      console.log(dbError);
-      throw new Error('Failed to save screenshot metadata');
-    }
-
-    // Update user's total_screenshots count
+  if(subscription?.[0]?.status !== 'active'){
+    return false;
+  }
+  if(!subscription){
     const { data: profile } = await supabase
       .from('profiles')
       .select('total_screenshots')
-      .eq('user_id', user.id)
-      .single();
+      .eq('user_id', userId)
+      .limit(1);
+    return profile?.[0]?.total_screenshots < SCREENSHOT_LIMIT;
+  }
+  return true;
+};
 
-    if (profile) {
-      const newTotal = profile.total_screenshots + 1;
-      await supabase
-        .from('profiles')
-        .update({ total_screenshots: newTotal })
-        .eq('user_id', user.id);
+export async function POST(req: Request) {
+  try {
+    const user = await authenticateUser(req.headers.get('authorization') || req.headers.get('Authorization'));
+    const params = await req.json();
+    params.url = validateAndFormatUrl(params.url);
+    const hasSubscription = await checkSubscription(user.id);
+    if(!hasSubscription){
+      throw new Error('You have reached your screenshot limit or subscription has expired');
     }
-    return NextResponse.json({
-      success: true,
-      screenshot: screenshotData[0],
-    });
+    const fileName = await captureAndUploadScreenshot(params);
+    const screenshotData = await saveScreenshotMetadata(user, params, fileName);
+    await updateUserTotalScreenshots(user.id);
+    return NextResponse.json({ success: true, screenshot: screenshotData });
   } catch (error) {
     console.error('Screenshot error:', error);
     return NextResponse.json(
-      { error: 'Failed to capture screenshot' },
-      { status: 500 }
+      { error: error instanceof Error ? error.message : 'Failed to capture screenshot' },
+      { status: error instanceof Error && error.message === 'Unauthorized' ? 401 : 500 }
     );
   }
 }
