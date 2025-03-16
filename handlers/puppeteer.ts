@@ -20,7 +20,7 @@ export class PuppeteerHandler {
         let browser;
         try {
             const isLocal = process.env.NODE_ENV === 'development';
-            const executablePath = isLocal ? '/opt/homebrew/bin/chromium' : await chromium.executablePath('/opt/nodejs/node_modules/@sparticuz/chromium');
+            const executablePath = isLocal ? '/opt/homebrew/bin/chromium' : await chromium.executablePath();
             
             const options = {
                 args: chromium.args,
