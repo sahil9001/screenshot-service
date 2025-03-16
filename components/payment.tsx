@@ -40,7 +40,7 @@ export default function Payment() {
             settings: {
                 displayMode: 'overlay',
                 theme: 'dark',
-                successUrl: `http://localhost:3000/dashboard/billing?success=true`,
+                successUrl: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/billing?success=true`,
             }
         })
     }
