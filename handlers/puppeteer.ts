@@ -1,19 +1,13 @@
 import puppeteer from 'puppeteer-extra';
 import chromium from '@sparticuz/chromium';
-// import StealthPlugin from 'puppeteer-extra-plugin-stealth';
 import AdblockerPlugin from 'puppeteer-extra-plugin-adblocker';
 
-// Use Stealth Plugin
-// const stealth = StealthPlugin();
-// puppeteer.use(stealth);
-puppeteer.use(AdblockerPlugin({ blockTrackers: true }));
 
 // Puppeteer Handler Class
 export class PuppeteerHandler {
     constructor() {
-        if (typeof window === 'undefined') {
-            chromium.setGraphicsMode = false;
-        }
+        puppeteer.use(AdblockerPlugin({ blockTrackers: true }));
+        chromium.setGraphicsMode = false;
     }
     
     async captureScreenshot({ url, device, width, height, followRedirects } : any) {
