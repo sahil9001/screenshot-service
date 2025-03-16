@@ -83,10 +83,7 @@ const checkSubscription = async (userId: string) => {
     .eq('user_id', userId)
     .limit(1);
 
-  if(subscription?.[0]?.status !== 'active'){
-    return false;
-  }
-  if(!subscription){
+  if (!subscription) {
     const { data: profile } = await supabase
       .from('profiles')
       .select('total_screenshots')
@@ -94,6 +91,11 @@ const checkSubscription = async (userId: string) => {
       .limit(1);
     return profile?.[0]?.total_screenshots < SCREENSHOT_LIMIT;
   }
+
+  if (subscription?.[0]?.status !== 'active') {
+    return false;
+  }
+
   return true;
 };
 
@@ -103,7 +105,7 @@ export async function POST(req: Request) {
     const params = await req.json();
     params.url = validateAndFormatUrl(params.url);
     const hasSubscription = await checkSubscription(user.id);
-    if(!hasSubscription){
+    if (!hasSubscription) {
       throw new Error('You have reached your screenshot limit or subscription has expired');
     }
     const fileName = await captureAndUploadScreenshot(params);
