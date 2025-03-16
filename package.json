@@ -8,6 +8,9 @@
     "start": "next start",
     "lint": "next lint"
   },
+  "pkg": {
+    "assets": "node_modules/puppeteer-extra-plugin-stealth/**/*.*"
+  },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
     "@lemonsqueezy/lemonsqueezy.js": "^4.0.0",
