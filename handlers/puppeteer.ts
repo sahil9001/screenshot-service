@@ -1,20 +1,16 @@
 import puppeteer from 'puppeteer-extra';
 import chromium from '@sparticuz/chromium';
+import StealthPlugin from 'puppeteer-extra-plugin-stealth';
+import AdblockerPlugin from 'puppeteer-extra-plugin-adblocker';
+
+// Initialize plugins
+puppeteer.use(StealthPlugin());
+puppeteer.use(AdblockerPlugin({ blockTrackers: true }));
 
 // Puppeteer Handler Class
 export class PuppeteerHandler {
     constructor() {
         if (typeof window === 'undefined') {
-            import('puppeteer-extra-plugin-stealth').then(module => {
-                const StealthPlugin = module.default;
-                puppeteer.use(StealthPlugin());
-            });
-
-            import('puppeteer-extra-plugin-adblocker').then(module => {
-                const AdblockerPlugin = module.default;
-                puppeteer.use(AdblockerPlugin({ blockTrackers: true }));
-            });
-
             chromium.setGraphicsMode = false;
         }
     }
