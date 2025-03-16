@@ -7,10 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import Link from "next/link";
-import { signUp } from "@/lib/auth";
+import { signUpAndCreateProfile } from "@/lib/auth";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { supabase } from "@/lib/supabase";
 
 export default function Signup() {
   const [email, setEmail] = useState("");
@@ -30,22 +29,7 @@ export default function Signup() {
     setLoading(true);
 
     try {
-      const data = await signUp(email, password);
-      if (data.user) {
-        const user = data.user;
-        console.log(user.id);
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .insert({
-            user_id: user.id,
-            total_screenshots: 0,
-            screenshots_this_month: 0,
-            subscription: 'Free'
-          });
-
-        if (profileError) throw profileError;
-      }
-
+      await signUpAndCreateProfile(email, password);
       toast.success("Account created successfully! 🎉");
       router.push("/dashboard");
     } catch (error) {

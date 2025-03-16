@@ -38,17 +38,19 @@ export default function Billing() {
         .from("subscriptions")
         .select("*")
         .eq("user_id", session.user.id)
-        .single();
-      
-      setSubscription(subscriptionData);
+        .limit(1);
+      if(subscriptionData?.[0]) {
+        setSubscription(subscriptionData[0]);
+      }
 
       const { data: profileData } = await supabase
         .from("profiles")
         .select("*")
         .eq("user_id", session.user.id)
-        .single();
-      
-      setProfile(profileData);
+        .limit(1);
+      if(profileData?.[0]) {
+        setProfile(profileData[0]);
+      }
     };
 
     fetchUserAndSubscription();
