@@ -1,15 +1,15 @@
 "use client";
 
-import React from "react";
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Button } from "@/components/ui/button"
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import Link from "next/link";
 import { signIn } from "@/lib/auth";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -50,6 +50,7 @@ export default function Login() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
+                disabled={loading}
               />
             </div>
             <div>
@@ -59,10 +60,24 @@ export default function Login() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                disabled={loading}
               />
+              <div className="mt-2 text-right">
+                <Link 
+                  href="/reset-password" 
+                  className="text-sm text-muted-foreground hover:text-primary transition-colors"
+                >
+                  Forgot password?
+                </Link>
+              </div>
             </div>
-            <Button className="w-full" type="submit" disabled={loading}>
-              {loading ? "Logging in... 🔄" : "Log In"}
+            <Button 
+              className="w-full" 
+              type="submit" 
+              disabled={loading}
+            >
+              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {loading ? "Logging in..." : "Log In"}
             </Button>
           </form>
           <p className="text-center mt-4 text-sm text-muted-foreground">
