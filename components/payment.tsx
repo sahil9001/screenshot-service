@@ -20,7 +20,7 @@ export default function Payment() {
 
     useEffect(() => {
         initializePaddle({
-            environment: 'sandbox',
+            environment: 'production',
             token: process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN!,
         }).then(paddle => setPaddle(paddle))
     }, []);
@@ -30,7 +30,7 @@ export default function Payment() {
         if (!user) return alert("User not found");
         paddle.Checkout.open({
             items: [{
-                priceId: "pri_01jpdcay42keaer32eyzj2b2c7",
+                priceId: "pri_01jpf2eas9386pqpjj4z6tghr8",
                 quantity: 1,
             }],
             customData: {
