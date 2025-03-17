@@ -28,6 +28,7 @@ type DeviceType = 'all' | 'desktop' | 'tablet' | 'mobile';
 export default function History() {
   const [screenshots, setScreenshots] = useState<Screenshot[]>([]);
   const [filteredScreenshots, setFilteredScreenshots] = useState<Screenshot[]>([]);
+  const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [selectedScreenshot, setSelectedScreenshot] = useState<Screenshot | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -37,8 +38,12 @@ export default function History() {
   const [selectedDevice, setSelectedDevice] = useState<DeviceType>('all');
 
   useEffect(() => {
-    fetchScreenshots();
+    fetchUser();
   }, []);
+
+  useEffect(() => {
+    if (user) fetchScreenshots();
+  }, [user]);
 
   useEffect(() => {
     let filtered = screenshots;
@@ -58,11 +63,18 @@ export default function History() {
     setFilteredScreenshots(filtered);
   }, [searchQuery, screenshots, selectedDevice]);
 
+  const fetchUser = async () => {
+    const { data: { user }, error } = await supabase.auth.getUser();
+    if (error || !user) return;
+    setUser(user);
+  };
+
   const fetchScreenshots = async () => {
     try {
       const { data, error } = await supabase
         .from('screenshots')
         .select('*')
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
