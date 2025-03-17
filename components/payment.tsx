@@ -40,7 +40,7 @@ export default function Payment() {
             settings: {
                 displayMode: 'overlay',
                 theme: 'dark',
-                successUrl: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/billing?success=true`,
+                successUrl: `https://web-capture.com/dashboard/billing?success=true`,
             }
         })
     }
